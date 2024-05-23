@@ -27,9 +27,8 @@ public class Home extends AppCompatActivity {
         if (user != null) {
             emailTextView.setText(user.getEmail());
 
-            // Assuming phone number and name are stored in user profile or Firestore database
-            // Here we just display placeholders
-            // Replace with actual retrieval from Firestore if needed
+            // phone number and name are stored in user profile or Firestore database
+            //  display placeholders
             phoneTextView.setText("Phone: Placeholder");
             nameTextView.setText("Name: Placeholder");
         }
