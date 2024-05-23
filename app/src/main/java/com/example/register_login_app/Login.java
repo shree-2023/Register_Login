@@ -11,11 +11,12 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
-
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.firebase.auth.AuthResult;
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.firestore.DocumentSnapshot;
+import com.google.firebase.firestore.FirebaseFirestore;
 
 public class Login extends AppCompatActivity {
     EditText email, pwd;
@@ -24,6 +25,7 @@ public class Login extends AppCompatActivity {
     String useremail, userpwd;
     String emailpattern = "[a-zA-Z0-9._-]+@[a-z]+\\.+[a-z]+";
     private FirebaseAuth auth;
+    private FirebaseFirestore db;
     private SharedPreferences sharedPreferences;
     private static final String LOGIN_PREFS = "loginPrefs";
 
@@ -32,11 +34,11 @@ public class Login extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_login);
         btnLogin = findViewById(R.id.button3);
-
         email = findViewById(R.id.editTextText);
         pwd = findViewById(R.id.editTextText4);
         btnReg = findViewById(R.id.TextView14);
         auth = FirebaseAuth.getInstance();
+        db = FirebaseFirestore.getInstance();
         sharedPreferences = getSharedPreferences(LOGIN_PREFS, MODE_PRIVATE);
 
         if (sharedPreferences.getBoolean("isLoggedIn", false)) {
@@ -82,11 +84,7 @@ public class Login extends AppCompatActivity {
                 SharedPreferences.Editor editor = sharedPreferences.edit();
                 editor.putBoolean("isLoggedIn", true);
                 editor.apply();
-                goToHomeActivity();
-                Toast.makeText(Login.this, "Login Successfully", Toast.LENGTH_SHORT).show();
-                Intent intent = new Intent(Login.this, Home.class);
-                startActivity(intent);
-                finish();
+                retrieveUserDetails();
             }
         }).addOnFailureListener(new OnFailureListener() {
             @Override
@@ -96,6 +94,33 @@ public class Login extends AppCompatActivity {
                 btnReg.setVisibility(View.VISIBLE);
             }
         });
+    }
+
+    private void retrieveUserDetails() {
+        db.collection("users").document(auth.getCurrentUser().getUid()).get()
+                .addOnSuccessListener(new OnSuccessListener<DocumentSnapshot>() {
+                    @Override
+                    public void onSuccess(DocumentSnapshot documentSnapshot) {
+                        if (documentSnapshot.exists()) {
+                            String name = documentSnapshot.getString("name");
+                            String email = documentSnapshot.getString("email");
+                            String phone = documentSnapshot.getString("phone");
+
+                            Intent intent = new Intent(Login.this, Home.class);
+                            intent.putExtra("name", name);
+                            intent.putExtra("email", email);
+                            intent.putExtra("phone", phone);
+                            startActivity(intent);
+                            finish();
+                        }
+                    }
+                })
+                .addOnFailureListener(new OnFailureListener() {
+                    @Override
+                    public void onFailure(@NonNull Exception e) {
+                        Toast.makeText(Login.this, "Error: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                    }
+                });
     }
 
     private void goToHomeActivity() {
